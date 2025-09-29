@@ -1,5 +1,6 @@
 package com.autofuellanka.systemmanager.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,22 +11,11 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "start_time")
     private String startTime;
-
-    @Column(name = "end_time")
     private String endTime;
-
-    @Column(name = "fuel_type")
     private String fuelType;
-
-    @Column(name = "liters_requested")
     private Double litersRequested;
-
-    @Column(name = "status")
     private String status;
-
-    @Column(name = "type")
     private String type;
 
     @Column(name = "customer_id")
@@ -40,8 +30,17 @@ public class Booking {
     @Column(name = "vehicle_id")
     private Long vehicleId;
 
-    // --- Getters & Setters ---
+    // ---- Relationships ----
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", referencedColumnName = "id", insertable = false, updatable = false)
+    private Customer customer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_type_id", referencedColumnName = "id", insertable = false, updatable = false)
+    private ServiceType serviceType;
+
+    // ---- Getters & setters ----
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -74,4 +73,10 @@ public class Booking {
 
     public Long getVehicleId() { return vehicleId; }
     public void setVehicleId(Long vehicleId) { this.vehicleId = vehicleId; }
+
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
+
+    public ServiceType getServiceType() { return serviceType; }
+    public void setServiceType(ServiceType serviceType) { this.serviceType = serviceType; }
 }

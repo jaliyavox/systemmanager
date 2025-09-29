@@ -1,5 +1,6 @@
 package com.autofuellanka.systemmanager.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,6 +11,7 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Keep as String for now (simple handling)
     @Column(name = "start_time")
     private String startTime;
 
@@ -28,7 +30,8 @@ public class Booking {
     @Column(name = "type")
     private String type;
 
-    @Column(name = "customer_id")
+    // ---- Foreign keys (primitive) ----
+    @Column(name = "customer_id", nullable = false)
     private Long customerId;
 
     @Column(name = "location_id")
@@ -40,8 +43,13 @@ public class Booking {
     @Column(name = "vehicle_id")
     private Long vehicleId;
 
-    // --- Getters & Setters ---
+    // ---- Read-only relationship (ignored in JSON to avoid lazy-load issues) ----
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id", referencedColumnName = "id", insertable = false, updatable = false)
+    private Customer customer;
 
+    // --- Getters & setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -74,4 +82,7 @@ public class Booking {
 
     public Long getVehicleId() { return vehicleId; }
     public void setVehicleId(Long vehicleId) { this.vehicleId = vehicleId; }
+
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
 }

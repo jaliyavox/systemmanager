@@ -104,4 +104,5 @@ public class BookingController {
         return ResponseEntity.ok("Booking " + id + " deleted successfully");
     }
 
+
 }

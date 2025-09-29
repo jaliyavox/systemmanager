@@ -7,15 +7,20 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig {
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**")
-                        .allowedOrigins("http://localhost:5173", "http://localhost:5174", "http://localhost:3000")
+                registry.addMapping("/**") // cover all endpoints
+                        // allow all localhost ports in dev
+                        .allowedOriginPatterns("http://localhost:*")
+                        // methods you want to expose
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                        .allowedHeaders("*");
+                        .allowedHeaders("*")
+                        .allowCredentials(true) // enable if you use cookies/session auth
+                        .maxAge(3600); // cache preflight response for 1h
             }
         };
     }

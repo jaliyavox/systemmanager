@@ -1,6 +1,10 @@
 import { useState } from "react";
 import Inventory from "./Inventory";
 import Bookings from "./Bookings";
+import Customers from "./Customers";
+import Vehicles from "./Vehicles";
+import ServiceTypes from "./ServiceTypes";
+import Reports from "./Reports";
 
 export default function Layout() {
     const [page, setPage] = useState("home");
@@ -13,8 +17,12 @@ export default function Layout() {
                     <h1 className="brand">AutoFuel Lanka</h1>
                     <nav className="nav">
                         <button onClick={() => setPage("home")}>Home</button>
-                        <button onClick={() => setPage("inventory")}>Inventory</button>
+                        <button onClick={() => setPage("customers")}>Customers</button>
+                        <button onClick={() => setPage("vehicles")}>Vehicles</button>
                         <button onClick={() => setPage("bookings")}>Bookings</button>
+                        <button onClick={() => setPage("service-types")}>Service Types</button>
+                        <button onClick={() => setPage("inventory")}>Inventory</button>
+                        <button onClick={() => setPage("reports")}>Reports</button>
                     </nav>
                 </div>
             </header>
@@ -22,6 +30,38 @@ export default function Layout() {
             {/* Main */}
             <main style={{ flex: 1 }}>
                 {page === "home" && <Home onNavigate={setPage} />}
+
+                {page === "customers" && (
+                    <section className="section">
+                        <div className="container">
+                            <Customers />
+                        </div>
+                    </section>
+                )}
+
+                {page === "vehicles" && (
+                    <section className="section">
+                        <div className="container">
+                            <Vehicles />
+                        </div>
+                    </section>
+                )}
+
+                {page === "bookings" && (
+                    <section className="section">
+                        <div className="container">
+                            <Bookings />
+                        </div>
+                    </section>
+                )}
+
+                {page === "service-types" && (
+                    <section className="section">
+                        <div className="container">
+                            <ServiceTypes />
+                        </div>
+                    </section>
+                )}
 
                 {page === "inventory" && (
                     <section className="section">
@@ -31,10 +71,10 @@ export default function Layout() {
                     </section>
                 )}
 
-                {page === "bookings" && (
+                {page === "reports" && (
                     <section className="section">
                         <div className="container">
-                            <Bookings />
+                            <Reports />
                         </div>
                     </section>
                 )}
@@ -61,8 +101,12 @@ function Home({ onNavigate }) {
                         Built for fuel stations and service centers.
                     </p>
                     <div className="hero-cta">
-                        <button className="btn btn-primary" onClick={() => onNavigate("inventory")}>Manage Inventory</button>
+                        <button className="btn btn-primary" onClick={() => onNavigate("customers")}>Manage Customers</button>
                         <button className="btn btn-ok" onClick={() => onNavigate("bookings")}>Manage Bookings</button>
+                        <button className="btn btn-primary" onClick={() => onNavigate("vehicles")}>Manage Vehicles</button>
+                        <button className="btn btn-ok" onClick={() => onNavigate("service-types")}>Service Types</button>
+                        <button className="btn btn-primary" onClick={() => onNavigate("inventory")}>Manage Inventory</button>
+                        <button className="btn btn-ok" onClick={() => onNavigate("reports")}>View Reports</button>
                     </div>
                 </div>
 

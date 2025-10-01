@@ -21,7 +21,8 @@ export default function Bookings() {
         setLoading(true);
         setErr("");
         try {
-            const res = await fetch(`${API_BASE}/api/bookings`);
+            const base = form.customerId ? `${API_BASE}/api/customers/${Number(form.customerId)}/bookings` : `${API_BASE}/api/bookings`;
+            const res = await fetch(base);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             setRows(data);
@@ -45,9 +46,8 @@ export default function Bookings() {
     const onSubmit = async (e) => {
         e.preventDefault();
         try {
-            const url = editId
-                ? `${API_BASE}/api/bookings/${editId}`
-                : `${API_BASE}/api/bookings`;
+            const base = `${API_BASE}/api/customers/${Number(form.customerId)}/bookings`;
+            const url = editId ? `${base}/${editId}` : base;
             const method = editId ? "PUT" : "POST";
 
             const body = {
@@ -75,7 +75,9 @@ export default function Bookings() {
     const onDelete = async (id) => {
         if (!confirm(`Delete booking #${id}?`)) return;
         try {
-            const res = await fetch(`${API_BASE}/api/bookings/${id}`, { method: "DELETE" });
+            const baseScoped = form.customerId ? `${API_BASE}/api/customers/${Number(form.customerId)}/bookings/${id}` : null;
+            const url = baseScoped ?? `${API_BASE}/api/bookings/${id}`;
+            const res = await fetch(url, { method: "DELETE" });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             await load();
         } catch (e) {
@@ -112,7 +114,7 @@ export default function Bookings() {
                 />
                 <input
                     name="startTime"
-                    placeholder="YYYY-MM-DD HH:mm:ss"
+                    placeholder="YYYY-MM-DDTHH:mm:ss"
                     value={form.startTime}
                     onChange={onChange}
                     required
@@ -126,7 +128,7 @@ export default function Bookings() {
                     <option value="CONFIRMED">CONFIRMED</option>
                     <option value="IN_PROGRESS">IN_PROGRESS</option>
                     <option value="COMPLETED">COMPLETED</option>
-                    <option value="CANCELED">CANCELED</option>
+                    <option value="CANCELLED">CANCELLED</option>
                 </select>
                 <button type="submit">{editId ? "Save Update" : "Add Booking"}</button>
                 {editId && (

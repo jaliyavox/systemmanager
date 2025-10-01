@@ -5,6 +5,7 @@ import com.autofuellanka.systemmanager.dto.BookingDTO;
 import com.autofuellanka.systemmanager.model.Booking;
 import com.autofuellanka.systemmanager.repository.BookingRepository;
 import com.autofuellanka.systemmanager.service.BookingValidationService;
+// Swagger annotations will be added once dependencies are resolved
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -3,6 +3,7 @@ package com.autofuellanka.systemmanager.controller;
 import com.autofuellanka.systemmanager.model.User;
 import com.autofuellanka.systemmanager.repository.UserRepository;
 import com.autofuellanka.systemmanager.security.JwtUtil;
+// Swagger annotations will be added once dependencies are resolved
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -2,6 +2,7 @@ package com.autofuellanka.systemmanager.controller;
 
 import com.autofuellanka.systemmanager.dto.ReportDTO;
 import com.autofuellanka.systemmanager.repository.BookingRepository;
+// Swagger annotations will be added once dependencies are resolved
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

@@ -23,19 +23,19 @@ public class Invoice {
     @Column(name = "booking_id", nullable = false)
     private Long bookingId;
 
-    @Column(name = "subtotal", nullable = false, precision = 10, scale = 2)
+    @Column(name = "subtotal", nullable = false)
     private Double subtotal = 0.0;
 
-    @Column(name = "tax_amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "tax_amount", nullable = false)
     private Double taxAmount = 0.0;
 
-    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "total_amount", nullable = false)
     private Double totalAmount = 0.0;
 
-    @Column(name = "paid_amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "paid_amount", nullable = false)
     private Double paidAmount = 0.0;
 
-    @Column(name = "balance", nullable = false, precision = 10, scale = 2)
+    @Column(name = "balance", nullable = false)
     private Double balance = 0.0;
 
     @Enumerated(EnumType.STRING)
@@ -72,7 +72,7 @@ public class Invoice {
         calculateBalance();
     }
 
-    private void calculateBalance() {
+    public void calculateBalance() {
         balance = totalAmount - paidAmount;
         updateStatus();
     }

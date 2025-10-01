@@ -24,7 +24,7 @@ public class Payment {
     @Column(name = "method", nullable = false, length = 20)
     private PaymentMethod method;
 
-    @Column(name = "amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "amount", nullable = false)
     private Double amount;
 
     @Column(name = "reference", length = 100)

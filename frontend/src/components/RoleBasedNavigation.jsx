@@ -5,7 +5,7 @@ export default function RoleBasedNavigation({ onNavigate, currentPage }) {
 
     const getNavigationItems = () => {
         const items = [
-            { key: "home", label: "Home", roles: ["CUSTOMER", "STAFF", "ADMIN"] }
+            { key: "home", label: "Home", roles: ["CUSTOMER", "STAFF", "FINANCE"] }
         ];
 
         // Customer-specific pages
@@ -26,6 +26,14 @@ export default function RoleBasedNavigation({ onNavigate, currentPage }) {
                 { key: "service-types", label: "Service Types", roles: ["STAFF"] },
                 { key: "inventory", label: "Inventory", roles: ["STAFF"] },
                 { key: "vehicle-types", label: "Vehicle Types", roles: ["STAFF"] }
+            );
+        }
+
+        // Finance pages
+        if (hasRole("FINANCE")) {
+            items.push(
+                { key: "invoices", label: "Invoices", roles: ["FINANCE"] },
+                { key: "finance-ledger", label: "Finance Ledger", roles: ["FINANCE"] }
             );
         }
 

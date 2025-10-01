@@ -7,6 +7,9 @@ import NewInventoryItem from "./NewInventoryItem";
 import StockMoves from "./StockMoves";
 import VehicleTypes from "./VehicleTypes";
 import OperationsDashboard from "./OperationsDashboard";
+import InvoiceList from "./InvoiceList";
+import InvoiceDetail from "./InvoiceDetail";
+import FinanceLedger from "./FinanceLedger";
 import Bookings from "./Bookings";
 import Customers from "./Customers";
 import Vehicles from "./Vehicles";
@@ -139,6 +142,39 @@ export default function Layout() {
                         </div>
                     </section>
                 )}
+
+                {page === "invoices" && (
+                    <section className="section">
+                        <div className="container">
+                            <ProtectedRoute requiredRole="FINANCE">
+                                <InvoiceList onNavigate={setPage} />
+                            </ProtectedRoute>
+                        </div>
+                    </section>
+                )}
+
+                {page.startsWith("invoice-detail-") && (
+                    <section className="section">
+                        <div className="container">
+                            <ProtectedRoute requiredRole="FINANCE">
+                                <InvoiceDetail 
+                                    invoiceId={parseInt(page.replace("invoice-detail-", ""))} 
+                                    onNavigate={setPage} 
+                                />
+                            </ProtectedRoute>
+                        </div>
+                    </section>
+                )}
+
+                {page === "finance-ledger" && (
+                    <section className="section">
+                        <div className="container">
+                            <ProtectedRoute requiredRole="FINANCE">
+                                <FinanceLedger onNavigate={setPage} />
+                            </ProtectedRoute>
+                        </div>
+                    </section>
+                )}
             </main>
 
             {/* Footer */}
@@ -176,6 +212,15 @@ function Home({ onNavigate }) {
                     { key: "service-types", label: "Service Types", color: "primary" },
                     { key: "inventory", label: "Manage Inventory", color: "ok" },
                     { key: "vehicle-types", label: "Vehicle Types", color: "primary" }
+                ]
+            };
+        } else if (hasRole("FINANCE")) {
+            return {
+                title: "Finance Dashboard",
+                subtitle: "Invoice management, payments, and financial reporting",
+                buttons: [
+                    { key: "invoices", label: "Manage Invoices", color: "primary" },
+                    { key: "finance-ledger", label: "Finance Ledger", color: "ok" }
                 ]
             };
         }

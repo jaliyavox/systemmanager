@@ -31,15 +31,15 @@ public class InvoiceLine {
     @Column(name = "quantity", nullable = false)
     private Integer quantity = 1;
 
-    @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
+    @Column(name = "unit_price", nullable = false)
     private Double unitPrice = 0.0;
 
-    @Column(name = "line_total", nullable = false, precision = 10, scale = 2)
+    @Column(name = "line_total", nullable = false)
     private Double lineTotal = 0.0;
 
     @PrePersist
     @PreUpdate
-    protected void calculateLineTotal() {
+    public void calculateLineTotal() {
         lineTotal = quantity * unitPrice;
     }
 

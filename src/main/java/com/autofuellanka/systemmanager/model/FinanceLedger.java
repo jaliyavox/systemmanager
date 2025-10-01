@@ -26,7 +26,7 @@ public class FinanceLedger {
     @Column(name = "transaction_type", nullable = false, length = 20)
     private TransactionType transactionType; // DEBIT or CREDIT
 
-    @Column(name = "amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "amount", nullable = false)
     private Double amount;
 
     @Column(name = "reference", length = 100)

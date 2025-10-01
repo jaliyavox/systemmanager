@@ -2,7 +2,6 @@ package com.autofuellanka.systemmanager.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.util.Objects;
 
 @Entity
@@ -26,9 +25,8 @@ public class Location {
     @Column(nullable = false, length = 255)
     private String address;
 
-    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", nullable = false, length = 32)
+    @Column(name = "type", nullable = true, length = 32)
     private LocationType type;
 
     protected Location() { }

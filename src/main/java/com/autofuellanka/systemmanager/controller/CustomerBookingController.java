@@ -198,5 +198,24 @@ public class CustomerBookingController {
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<?> updateStatus(
+            @PathVariable Long customerId,
+            @PathVariable Long id,
+            @RequestBody com.autofuellanka.systemmanager.payload.StatusUpdatePayload payload
+    ) {
+        validator.requireCustomer(customerId);
+
+        return bookingRepo.findByIdAndCustomerId(id, customerId)
+                .map(existing -> {
+                    String err = validator.validateStatusTransition(existing.getStatus(), payload.status);
+                    if (err != null) throw new IllegalArgumentException(err);
+                    existing.setStatus(payload.status.toUpperCase());
+                    Booking saved = bookingRepo.save(existing);
+                    return ResponseEntity.ok(new BookingDTO(saved));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 }
 

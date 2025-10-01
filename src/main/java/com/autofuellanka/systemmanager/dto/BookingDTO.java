@@ -18,6 +18,7 @@ public class BookingDTO {
     // Service info
     private Long serviceTypeId;
     private String serviceName;
+    private Double price;
 
     public BookingDTO(Booking b) {
         this.id = b.getId();
@@ -35,6 +36,13 @@ public class BookingDTO {
             this.serviceTypeId = b.getServiceType().getId();
             this.serviceName = b.getServiceType().getName();
         }
+
+        // --- price calculation: for SERVICE use basePrice; for FUEL none for now ---
+        if ("SERVICE".equalsIgnoreCase(this.type) && b.getServiceType() != null) {
+            this.price = b.getServiceType().getBasePrice();
+        } else {
+            this.price = null;
+        }
     }
 
     // ---- Getters ----
@@ -50,4 +58,5 @@ public class BookingDTO {
     public Long getVehicleId() { return vehicleId; }
     public Long getServiceTypeId() { return serviceTypeId; }
     public String getServiceName() { return serviceName; }
+    public Double getPrice() { return price; }
 }

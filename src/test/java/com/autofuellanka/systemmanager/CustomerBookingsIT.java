@@ -60,7 +60,7 @@ public class CustomerBookingsIT {
 
         Vehicle v = new Vehicle();
         v.setCustomerId(customerId);
-        v.setLicensePlate("ABC-1234");
+        v.setPlateNumber("ABC-1234");
         v.setModel("Car");
         vehicles.save(v);
         vehicleId = v.getId();
@@ -117,13 +117,56 @@ public class CustomerBookingsIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.price").value(org.hamcrest.Matchers.notNullValue()))
                 .andReturn().getResponse().getContentAsString();
 
-        String id = resp.replaceAll(".*\"id\":(\d+).*", "$1");
+        String id = resp.replaceAll(".*\\\"id\\\":(\\d+).*", "$1");
 
         mvc.perform(delete("/api/customers/" + customerId + "/bookings/" + id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    void status_transitions_enforced() throws Exception {
+        String body = "{" +
+                "\"startTime\":\"2025-10-02T09:00:00\"," +
+                "\"endTime\":\"2025-10-02T10:00:00\"," +
+                "\"locationId\":" + locationId + "," +
+                "\"serviceTypeId\":" + serviceTypeId + "," +
+                "\"vehicleId\":" + vehicleId + "," +
+                "\"type\":\"SERVICE\"" +
+                "}";
+
+        String created = mvc.perform(post("/api/customers/" + customerId + "/bookings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = created.replaceAll(".*\\\"id\\\":(\\d+).*", "$1");
+
+        mvc.perform(patch("/api/customers/" + customerId + "/bookings/" + id + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CONFIRMED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+
+        mvc.perform(patch("/api/customers/" + customerId + "/bookings/" + id + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"IN_PROGRESS\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_PROGRESS"));
+
+        mvc.perform(patch("/api/customers/" + customerId + "/bookings/" + id + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"COMPLETED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        mvc.perform(patch("/api/customers/" + customerId + "/bookings/" + id + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"CANCELLED\"}"))
+                .andExpect(status().isBadRequest());
     }
 }
 

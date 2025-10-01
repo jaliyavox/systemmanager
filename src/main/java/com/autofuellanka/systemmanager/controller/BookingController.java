@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/bookings")
@@ -21,15 +22,17 @@ public class BookingController {
 
     // List all bookings
     @GetMapping
-    public List<Booking> listAll() {
-        return repo.findAll();
+    public List<com.autofuellanka.systemmanager.dto.BookingDTO> listAll() {
+        return repo.findAllWithServiceType().stream()
+                .map(com.autofuellanka.systemmanager.dto.BookingDTO::new)
+                .collect(Collectors.toList());
     }
 
     // Get one booking by ID
     @GetMapping("/{id}")
     public ResponseEntity<?> getOne(@PathVariable Long id) {
-        return repo.findById(id)
-                .map(ResponseEntity::ok)
+        return repo.findByIdWithServiceType(id)
+                .map(b -> ResponseEntity.ok(new com.autofuellanka.systemmanager.dto.BookingDTO(b)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -55,7 +58,8 @@ public class BookingController {
 
         try {
             Booking saved = repo.save(input);
-            return ResponseEntity.created(URI.create("/api/bookings/" + saved.getId())).body(saved);
+            return ResponseEntity.created(URI.create("/api/bookings/" + saved.getId()))
+                    .body(new com.autofuellanka.systemmanager.dto.BookingDTO(saved));
         } catch (DataIntegrityViolationException ex) {
             String msg = ex.getMostSpecificCause() != null
                     ? ex.getMostSpecificCause().getMessage()

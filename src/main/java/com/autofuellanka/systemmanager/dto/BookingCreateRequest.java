@@ -1,25 +1,40 @@
 package com.autofuellanka.systemmanager.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public class BookingCreateRequest {
 
     private String startTime;
     private String endTime;
+
+    // Optional; if present must be PETROL or DIESEL
+    @Pattern(regexp = "(?i)PETROL|DIESEL", message = "fuelType must be PETROL or DIESEL")
     private String fuelType;
+
+    // Optional; if present must be > 0
+    @Positive(message = "litersRequested must be > 0")
     private Double litersRequested;
 
-    @NotNull
+    @NotNull(message = "locationId is required")
     private Long locationId;
 
-    private Long serviceTypeId; // optional for fuel bookings
+    // Optional for FUEL, required for SERVICE (business rule enforced in service)
+    private Long serviceTypeId;
 
-    @NotNull
+    @NotNull(message = "vehicleId is required")
     private Long vehicleId;
 
-    @Size(min = 1, max = 32)
+    @Size(min = 1, max = 32, message = "type length must be 1–32")
+    @Pattern(regexp = "(?i)FUEL|SERVICE", message = "type must be FUEL or SERVICE")
     private String type;  // "SERVICE" or "FUEL"
+
+    // Optional; if provided must be one of the allowed statuses
+    @Pattern(regexp = "(?i)PENDING|CONFIRMED|CANCELLED|COMPLETED",
+            message = "status must be PENDING, CONFIRMED, CANCELLED or COMPLETED")
+    private String status;
 
     // --- getters/setters ---
     public String getStartTime() { return startTime; }
@@ -45,4 +60,7 @@ public class BookingCreateRequest {
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

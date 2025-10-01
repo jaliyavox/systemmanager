@@ -7,6 +7,8 @@ import com.autofuellanka.systemmanager.repository.UserRepository;
 import com.autofuellanka.systemmanager.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 
+
+
 import java.util.Set;
 
 @Service
@@ -14,8 +16,8 @@ public class BookingValidationService {
 
     // Allowed values we’ll accept (DB can still be freer/tighter if you want)
     private static final Set<String> ALLOWED_TYPES   = Set.of("FUEL", "SERVICE");
-    private static final Set<String> ALLOWED_STATUS  = Set.of("PENDING", "CONFIRMED", "COMPLETED", "CANCELLED");
-    private static final Set<String> ALLOWED_FUEL    = Set.of("PETROL", "DIESEL", "ELECTRIC", "HYBRID");
+    private static final Set<String> ALLOWED_STATUS  = Set.of("PENDING", "CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED");
+    private static final Set<String> ALLOWED_FUEL = Set.of("PETROL", "DIESEL");
 
     private final UserRepository userRepo;
     private final LocationRepository locationRepo;
@@ -108,6 +110,40 @@ public class BookingValidationService {
         return null;
     }
 
+    /** Enforce allowed status transitions */
+    public String validateStatusTransition(String currentStatus, String nextStatus) {
+        String from = up(currentStatus);
+        String to = up(nextStatus);
+        if (to == null || to.isBlank()) return null; // nothing to change
+        if (!ALLOWED_STATUS.contains(to)) return "status must be one of: " + ALLOWED_STATUS;
+
+        if (from == null || from.isBlank()) return null; // creating with default handled elsewhere
+
+        // Allowed transitions:
+        // PENDING -> CONFIRMED -> IN_PROGRESS -> COMPLETED
+        // PENDING -> CANCELLED
+        // CONFIRMED -> CANCELLED
+        // IN_PROGRESS -> CANCELLED (optional: allow cancellation while in progress)
+        switch (from) {
+            case "PENDING":
+                if (to.equals("CONFIRMED") || to.equals("CANCELLED")) return null;
+                break;
+            case "CONFIRMED":
+                if (to.equals("IN_PROGRESS") || to.equals("CANCELLED")) return null;
+                break;
+            case "IN_PROGRESS":
+                if (to.equals("COMPLETED") || to.equals("CANCELLED")) return null;
+                break;
+            case "COMPLETED":
+            case "CANCELLED":
+                // terminal states
+                break;
+            default:
+                break;
+        }
+        return "Invalid status transition: " + from + " -> " + to;
+    }
+
     /** Utility to normalize fields on the way in (optional) */
     public Normalized normalize(String type, String status, String fuelType) {
         Normalized n = new Normalized();
@@ -122,4 +158,36 @@ public class BookingValidationService {
         public String status;
         public String fuelType;
     }
+    // --- Compatibility helpers for controllers that call "require*" methods ---
+    public void requireCustomer(Long customerId) {
+        if (customerId == null) throw new IllegalArgumentException("customerId is required");
+        if (!userRepo.existsById(customerId)) {
+            throw new IllegalStateException("customerId does not exist: " + customerId);
+        }
+    }
+
+    public void requireLocation(Long locationId) {
+        if (locationId == null) throw new IllegalArgumentException("locationId is required");
+        if (!locationRepo.existsById(locationId)) {
+            throw new IllegalStateException("locationId does not exist: " + locationId);
+        }
+    }
+
+    public void requireServiceType(Long serviceTypeId) {
+        if (serviceTypeId == null) throw new IllegalArgumentException("serviceTypeId is required");
+        if (!serviceTypeRepo.existsById(serviceTypeId)) {
+            throw new IllegalStateException("serviceTypeId does not exist: " + serviceTypeId);
+        }
+    }
+
+    /** Ensures vehicle exists and belongs to customer */
+    public void requireVehicleOwnedBy(Long vehicleId, Long customerId) {
+        if (vehicleId == null) throw new IllegalArgumentException("vehicleId is required");
+        var v = vehicleRepo.findById(vehicleId).orElse(null);
+        if (v == null) throw new IllegalStateException("vehicleId does not exist: " + vehicleId);
+        if (!customerId.equals(v.getCustomerId())) {
+            throw new IllegalStateException("vehicle does not belong to the given customer");
+        }
+    }
+
 }

@@ -12,6 +12,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByCustomerId(Long customerId);
 
+    Optional<Booking> findByIdAndCustomerId(Long id, Long customerId);
+
     @Query("select b from Booking b left join fetch b.serviceType where b.customerId = :customerId")
     List<Booking> findByCustomerIdWithServiceType(@Param("customerId") Long customerId);
 

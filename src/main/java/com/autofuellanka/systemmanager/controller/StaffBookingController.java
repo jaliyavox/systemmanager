@@ -1,5 +1,6 @@
 package com.autofuellanka.systemmanager.controller;
 
+import com.autofuellanka.systemmanager.dto.BookingDTO;
 import com.autofuellanka.systemmanager.model.Booking;
 import com.autofuellanka.systemmanager.model.User;
 import com.autofuellanka.systemmanager.repository.BookingRepository;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/staff/bookings")
+@RequestMapping({"/api/staff/bookings", "/api/staff/bookings/"})
 public class StaffBookingController {
 
     private final BookingRepository repo;
@@ -26,7 +27,6 @@ public class StaffBookingController {
         return role != null && (role.equalsIgnoreCase("STAFF") || role.equalsIgnoreCase("ADMIN"));
     }
 
-    /** Resolve role: prefer X-Role header; if absent, try X-User-Id -> lookup user.role */
     private String resolveRole(String roleHeader, Long userIdHeader) {
         if (roleHeader != null && !roleHeader.isBlank()) return roleHeader;
         if (userIdHeader != null) {
@@ -36,20 +36,20 @@ public class StaffBookingController {
         return null;
     }
 
-    // 1) Staff - list all bookings
-    @GetMapping
+    // List all bookings (fetch join to avoid LazyInitializationException)
+    @GetMapping({"", "/"})
     public ResponseEntity<?> listAll(
             @RequestHeader(value = "X-Role", required = false) String roleHeader,
             @RequestHeader(value = "X-User-Id", required = false) Long userIdHeader
     ) {
         String role = resolveRole(roleHeader, userIdHeader);
-        System.out.println("DEBUG(listAll): X-Role=" + roleHeader + " X-User-Id=" + userIdHeader + " -> resolvedRole=" + role);
         if (!isStaffRole(role)) return ResponseEntity.status(403).body("Forbidden: STAFF/ADMIN only");
-        List<Booking> all = repo.findAll();
-        return ResponseEntity.ok(all);
+
+        List<Booking> all = repo.findAllWithServiceType();
+        return ResponseEntity.ok(all.stream().map(BookingDTO::new).toList());
     }
 
-    // 2) Staff - update booking status only
+    // Update booking status only
     @PutMapping("/{id}/status")
     public ResponseEntity<?> updateStatus(
             @RequestHeader(value = "X-Role", required = false) String roleHeader,
@@ -58,7 +58,6 @@ public class StaffBookingController {
             @RequestBody StatusPayload payload
     ) {
         String role = resolveRole(roleHeader, userIdHeader);
-        System.out.println("DEBUG(updateStatus): X-Role=" + roleHeader + " X-User-Id=" + userIdHeader + " -> resolvedRole=" + role);
         if (!isStaffRole(role)) return ResponseEntity.status(403).body("Forbidden: STAFF/ADMIN only");
         if (payload == null || payload.status == null || payload.status.isBlank()) {
             return ResponseEntity.badRequest().body("status is required");
@@ -67,11 +66,12 @@ public class StaffBookingController {
         return repo.findById(id).map(b -> {
             b.setStatus(payload.status);
             Booking saved = repo.save(b);
-            return ResponseEntity.ok(saved);
+            // reload with fetch join for DTO
+            Booking full = repo.findByIdWithServiceType(saved.getId()).orElse(saved);
+            return ResponseEntity.ok(new BookingDTO(full));
         }).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    // tiny inner DTO
     public static class StatusPayload {
         public String status;
     }

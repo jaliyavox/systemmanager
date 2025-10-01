@@ -1,88 +1,60 @@
 package com.autofuellanka.systemmanager.controller;
 
+import com.autofuellanka.systemmanager.dto.BookingCreateRequest;
 import com.autofuellanka.systemmanager.dto.BookingDTO;
 import com.autofuellanka.systemmanager.model.Booking;
 import com.autofuellanka.systemmanager.repository.BookingRepository;
+import com.autofuellanka.systemmanager.service.BookingValidationService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
-@RequestMapping("/api/customers")
+@RequestMapping("/api/customers/{customerId}/bookings")
 public class CustomerBookingController {
 
     private final BookingRepository bookingRepo;
+    private final BookingValidationService validator;
 
-    public CustomerBookingController(BookingRepository bookingRepo) {
+    public CustomerBookingController(BookingRepository bookingRepo,
+                                     BookingValidationService validator) {
         this.bookingRepo = bookingRepo;
+        this.validator = validator;
     }
 
-    // List bookings for a customer (FETCH JOIN -> serviceType loaded)
-    @GetMapping("/{customerId}/bookings")
-    public ResponseEntity<?> listBookingsByCustomer(@PathVariable Long customerId) {
-        List<Booking> bookings = bookingRepo.findByCustomerIdWithServiceType(customerId);
-        return ResponseEntity.ok(bookings.stream().map(BookingDTO::new).toList());
-    }
-
-    // Cancel a booking
-    @PutMapping("/{customerId}/bookings/{bookingId}/cancel")
-    public ResponseEntity<?> cancelBookingByCustomer(
+    @PostMapping
+    public ResponseEntity<?> createBooking(
             @PathVariable Long customerId,
-            @PathVariable Long bookingId
+            @Valid @RequestBody BookingCreateRequest req
     ) {
-        return bookingRepo.findById(bookingId).map(b -> {
-            if (!b.getCustomerId().equals(customerId)) {
-                return ResponseEntity.status(403).body("Forbidden: This booking does not belong to you");
-            }
-            b.setStatus("CANCELLED");
-            Booking saved = bookingRepo.save(b);
-            // Reload with fetch join for DTO
-            Booking full = bookingRepo.findByIdWithServiceType(saved.getId()).orElse(saved);
-            return ResponseEntity.ok(new BookingDTO(full));
-        }).orElseGet(() -> ResponseEntity.notFound().build());
-    }
+        // --- validations ---
+        validator.requireCustomer(customerId);
+        validator.requireLocation(req.getLocationId());
+        if (req.getServiceTypeId() != null) {
+            validator.requireServiceType(req.getServiceTypeId());
+        }
+        validator.requireVehicleOwnedBy(req.getVehicleId(), customerId);
 
-    // Update booking (reschedule/change details)
-    @PutMapping("/{customerId}/bookings/{bookingId}")
-    public ResponseEntity<?> updateBookingByCustomer(
-            @PathVariable Long customerId,
-            @PathVariable Long bookingId,
-            @RequestBody(required = false) UpdatePayload payload
-    ) {
-        return bookingRepo.findById(bookingId).map(b -> {
-            if (!b.getCustomerId().equals(customerId)) {
-                return ResponseEntity.status(403).body("Forbidden: This booking does not belong to you");
-            }
-            if (payload == null) {
-                return ResponseEntity.badRequest().body("Request body is empty. Send at least one field or {}.");
-            }
+        // --- map request → entity ---
+        Booking booking = new Booking();
+        booking.setCustomerId(customerId);
+        booking.setLocationId(req.getLocationId());
+        booking.setServiceTypeId(req.getServiceTypeId());
+        booking.setVehicleId(req.getVehicleId());
 
-            if (payload.startTime != null && !payload.startTime.isBlank()) b.setStartTime(payload.startTime);
-            if (payload.endTime != null && !payload.endTime.isBlank())     b.setEndTime(payload.endTime);
-            if (payload.type != null && !payload.type.isBlank())           b.setType(payload.type);
-            if (payload.fuelType != null && !payload.fuelType.isBlank())   b.setFuelType(payload.fuelType);
-            if (payload.litersRequested != null)                           b.setLitersRequested(payload.litersRequested);
-            if (payload.locationId != null)                                b.setLocationId(payload.locationId);
-            if (payload.serviceTypeId != null)                             b.setServiceTypeId(payload.serviceTypeId);
-            if (payload.vehicleId != null)                                 b.setVehicleId(payload.vehicleId);
+        booking.setType(req.getType());
+        booking.setFuelType(req.getFuelType());
+        booking.setLitersRequested(req.getLitersRequested());
+        booking.setStartTime(req.getStartTime());
+        booking.setEndTime(req.getEndTime());
 
-            Booking saved = bookingRepo.save(b);
-            // Reload with fetch join for DTO
-            Booking full = bookingRepo.findByIdWithServiceType(saved.getId()).orElse(saved);
-            return ResponseEntity.ok(new BookingDTO(full));
-        }).orElseGet(() -> ResponseEntity.notFound().build());
-    }
+        // default safe status
+        booking.setStatus("PENDING");
 
-    // --- DTO for updates ---
-    public static class UpdatePayload {
-        public String startTime;
-        public String endTime;
-        public String type;
-        public String fuelType;
-        public Double litersRequested;
-        public Long locationId;
-        public Long serviceTypeId;
-        public Long vehicleId;
+        // --- save ---
+        Booking saved = bookingRepo.save(booking);
+
+        // --- response ---
+        return ResponseEntity.status(201).body(new BookingDTO(saved));
     }
 }

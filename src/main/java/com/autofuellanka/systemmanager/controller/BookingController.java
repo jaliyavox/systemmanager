@@ -1,5 +1,6 @@
 package com.autofuellanka.systemmanager.controller;
 
+import com.autofuellanka.systemmanager.dto.BookingDTO;
 import com.autofuellanka.systemmanager.model.Booking;
 import com.autofuellanka.systemmanager.repository.BookingRepository;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -22,9 +23,9 @@ public class BookingController {
 
     // List all bookings
     @GetMapping
-    public List<com.autofuellanka.systemmanager.dto.BookingDTO> listAll() {
+    public List<BookingDTO> listAll() {
         return repo.findAllWithServiceType().stream()
-                .map(com.autofuellanka.systemmanager.dto.BookingDTO::new)
+                .map(BookingDTO::new)
                 .collect(Collectors.toList());
     }
 
@@ -32,7 +33,7 @@ public class BookingController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getOne(@PathVariable Long id) {
         return repo.findByIdWithServiceType(id)
-                .map(b -> ResponseEntity.ok(new com.autofuellanka.systemmanager.dto.BookingDTO(b)))
+                .map(b -> ResponseEntity.ok(new BookingDTO(b)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
@@ -59,7 +60,7 @@ public class BookingController {
         try {
             Booking saved = repo.save(input);
             return ResponseEntity.created(URI.create("/api/bookings/" + saved.getId()))
-                    .body(new com.autofuellanka.systemmanager.dto.BookingDTO(saved));
+                    .body(new BookingDTO(saved));
         } catch (DataIntegrityViolationException ex) {
             String msg = ex.getMostSpecificCause() != null
                     ? ex.getMostSpecificCause().getMessage()

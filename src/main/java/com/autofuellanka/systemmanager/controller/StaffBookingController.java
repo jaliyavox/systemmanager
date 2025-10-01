@@ -55,7 +55,7 @@ public class StaffBookingController {
             @RequestHeader(value = "X-Role", required = false) String roleHeader,
             @RequestHeader(value = "X-User-Id", required = false) Long userIdHeader,
             @PathVariable Long id,
-            @RequestBody StatusPayload payload
+            @RequestBody StaffBookingController.StatusPayload payload
     ) {
         String role = resolveRole(roleHeader, userIdHeader);
         if (!isStaffRole(role)) return ResponseEntity.status(403).body("Forbidden: STAFF/ADMIN only");

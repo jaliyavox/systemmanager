@@ -2,12 +2,15 @@ import { useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedNavigation from "./RoleBasedNavigation";
-import Inventory from "./Inventory";
+import InventoryItems from "./inventory";
+import NewInventoryItem from "./NewInventoryItem";
+import StockMoves from "./StockMoves";
+import VehicleTypes from "./VehicleTypes";
+import OperationsDashboard from "./OperationsDashboard";
 import Bookings from "./Bookings";
 import Customers from "./Customers";
 import Vehicles from "./Vehicles";
 import ServiceTypes from "./ServiceTypes";
-import Reports from "./Reports";
 import MyBookings from "./MyBookings";
 import MyVehicles from "./MyVehicles";
 
@@ -91,18 +94,47 @@ export default function Layout() {
                     <section className="section">
                         <div className="container">
                             <ProtectedRoute requiredRole="STAFF">
-                                <Inventory />
+                                <InventoryItems onNavigate={setPage} />
                             </ProtectedRoute>
                         </div>
                     </section>
                 )}
 
-                {/* Admin-only pages */}
-                {page === "reports" && (
+                {page === "inventory-new" && (
                     <section className="section">
                         <div className="container">
-                            <ProtectedRoute requiredRole="ADMIN">
-                                <Reports />
+                            <ProtectedRoute requiredRole="STAFF">
+                                <NewInventoryItem onNavigate={setPage} />
+                            </ProtectedRoute>
+                        </div>
+                    </section>
+                )}
+
+                {page === "inventory-moves" && (
+                    <section className="section">
+                        <div className="container">
+                            <ProtectedRoute requiredRole="STAFF">
+                                <StockMoves onNavigate={setPage} />
+                            </ProtectedRoute>
+                        </div>
+                    </section>
+                )}
+
+                {page === "vehicle-types" && (
+                    <section className="section">
+                        <div className="container">
+                            <ProtectedRoute requiredRole="STAFF">
+                                <VehicleTypes />
+                            </ProtectedRoute>
+                        </div>
+                    </section>
+                )}
+
+                {page === "operations-dashboard" && (
+                    <section className="section">
+                        <div className="container">
+                            <ProtectedRoute requiredRole="STAFF">
+                                <OperationsDashboard onNavigate={setPage} />
                             </ProtectedRoute>
                         </div>
                     </section>
@@ -134,27 +166,16 @@ function Home({ onNavigate }) {
             };
         } else if (hasRole("STAFF")) {
             return {
-                title: "Staff Dashboard",
-                subtitle: "Manage customers, bookings, and inventory",
+                title: "Operations Manager Dashboard",
+                subtitle: "Complete system management, inventory, and reporting",
                 buttons: [
-                    { key: "customers", label: "Manage Customers", color: "primary" },
-                    { key: "bookings", label: "All Bookings", color: "ok" },
-                    { key: "vehicles", label: "Manage Vehicles", color: "primary" },
-                    { key: "service-types", label: "Service Types", color: "ok" },
-                    { key: "inventory", label: "Manage Inventory", color: "primary" }
-                ]
-            };
-        } else if (hasRole("ADMIN")) {
-            return {
-                title: "Admin Dashboard",
-                subtitle: "Complete system management and analytics",
-                buttons: [
-                    { key: "customers", label: "Manage Customers", color: "primary" },
-                    { key: "bookings", label: "All Bookings", color: "ok" },
-                    { key: "vehicles", label: "Manage Vehicles", color: "primary" },
-                    { key: "service-types", label: "Service Types", color: "ok" },
-                    { key: "inventory", label: "Manage Inventory", color: "primary" },
-                    { key: "reports", label: "View Reports", color: "ok" }
+                    { key: "operations-dashboard", label: "Operations Dashboard", color: "primary" },
+                    { key: "customers", label: "Manage Customers", color: "ok" },
+                    { key: "bookings", label: "All Bookings", color: "primary" },
+                    { key: "vehicles", label: "Manage Vehicles", color: "ok" },
+                    { key: "service-types", label: "Service Types", color: "primary" },
+                    { key: "inventory", label: "Manage Inventory", color: "ok" },
+                    { key: "vehicle-types", label: "Vehicle Types", color: "primary" }
                 ]
             };
         }

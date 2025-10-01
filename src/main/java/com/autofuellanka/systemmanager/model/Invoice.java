@@ -1,56 +1,136 @@
 package com.autofuellanka.systemmanager.model;
 
 import jakarta.persistence.*;
-import java.time.*;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
-@Table(name="invoices", indexes = @Index(columnList = "createdAt"))
+@Table(name = "invoices",
+        indexes = {
+                @Index(name = "idx_invoices_booking", columnList = "booking_id"),
+                @Index(name = "idx_invoices_status", columnList = "status"),
+                @Index(name = "idx_invoices_date", columnList = "created_at")
+        })
 public class Invoice {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
-    private User createdBy;
+    @Column(name = "invoice_number", nullable = false, unique = true, length = 50)
+    private String invoiceNumber;
 
-    @OneToOne(optional = false)
-    private Booking booking;
+    @Column(name = "booking_id", nullable = false)
+    private Long bookingId;
 
-    private double amount;
-    private double tax;
-    private double discount;
-    private double total;
+    @Column(name = "subtotal", nullable = false, precision = 10, scale = 2)
+    private Double subtotal = 0.0;
 
-    private boolean paid;
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "tax_amount", nullable = false, precision = 10, scale = 2)
+    private Double taxAmount = 0.0;
 
-    // Constructors
-    public Invoice() {}
+    @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
+    private Double totalAmount = 0.0;
+
+    @Column(name = "paid_amount", nullable = false, precision = 10, scale = 2)
+    private Double paidAmount = 0.0;
+
+    @Column(name = "balance", nullable = false, precision = 10, scale = 2)
+    private Double balance = 0.0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private InvoiceStatus status = InvoiceStatus.UNPAID;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "due_date")
+    private LocalDateTime dueDate;
+
+    @Column(name = "notes", length = 500)
+    private String notes;
+
+    // Relationships
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<InvoiceLine> invoiceLines;
+
+    @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Payment> payments;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        if (invoiceNumber == null) {
+            invoiceNumber = generateInvoiceNumber();
+        }
+        calculateBalance();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        calculateBalance();
+    }
+
+    private void calculateBalance() {
+        balance = totalAmount - paidAmount;
+        updateStatus();
+    }
+
+    private void updateStatus() {
+        if (balance <= 0) {
+            status = InvoiceStatus.PAID;
+        } else if (paidAmount > 0) {
+            status = InvoiceStatus.PARTIAL;
+        } else {
+            status = InvoiceStatus.UNPAID;
+        }
+    }
+
+    private String generateInvoiceNumber() {
+        return "INV-" + System.currentTimeMillis();
+    }
 
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
-    public User getCreatedBy() { return createdBy; }
-    public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
+    public String getInvoiceNumber() { return invoiceNumber; }
+    public void setInvoiceNumber(String invoiceNumber) { this.invoiceNumber = invoiceNumber; }
 
-    public Booking getBooking() { return booking; }
-    public void setBooking(Booking booking) { this.booking = booking; }
+    public Long getBookingId() { return bookingId; }
+    public void setBookingId(Long bookingId) { this.bookingId = bookingId; }
 
-    public double getAmount() { return amount; }
-    public void setAmount(double amount) { this.amount = amount; }
+    public Double getSubtotal() { return subtotal; }
+    public void setSubtotal(Double subtotal) { this.subtotal = subtotal; }
 
-    public double getTax() { return tax; }
-    public void setTax(double tax) { this.tax = tax; }
+    public Double getTaxAmount() { return taxAmount; }
+    public void setTaxAmount(Double taxAmount) { this.taxAmount = taxAmount; }
 
-    public double getDiscount() { return discount; }
-    public void setDiscount(double discount) { this.discount = discount; }
+    public Double getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(Double totalAmount) { this.totalAmount = totalAmount; }
 
-    public double getTotal() { return total; }
-    public void setTotal(double total) { this.total = total; }
+    public Double getPaidAmount() { return paidAmount; }
+    public void setPaidAmount(Double paidAmount) { this.paidAmount = paidAmount; }
 
-    public boolean isPaid() { return paid; }
-    public void setPaid(boolean paid) { this.paid = paid; }
+    public Double getBalance() { return balance; }
+    public void setBalance(Double balance) { this.balance = balance; }
+
+    public InvoiceStatus getStatus() { return status; }
+    public void setStatus(InvoiceStatus status) { this.status = status; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getDueDate() { return dueDate; }
+    public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
+
+    public List<InvoiceLine> getInvoiceLines() { return invoiceLines; }
+    public void setInvoiceLines(List<InvoiceLine> invoiceLines) { this.invoiceLines = invoiceLines; }
+
+    public List<Payment> getPayments() { return payments; }
+    public void setPayments(List<Payment> payments) { this.payments = payments; }
 }

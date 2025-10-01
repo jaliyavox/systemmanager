@@ -16,21 +16,16 @@ export default function RoleBasedNavigation({ onNavigate, currentPage }) {
             );
         }
 
-        // Staff and Admin pages
+        // Staff pages (Operations Manager)
         if (hasRole("STAFF")) {
             items.push(
-                { key: "customers", label: "Customers", roles: ["STAFF", "ADMIN"] },
-                { key: "vehicles", label: "Vehicles", roles: ["STAFF", "ADMIN"] },
-                { key: "bookings", label: "All Bookings", roles: ["STAFF", "ADMIN"] },
-                { key: "service-types", label: "Service Types", roles: ["STAFF", "ADMIN"] },
-                { key: "inventory", label: "Inventory", roles: ["STAFF", "ADMIN"] }
-            );
-        }
-
-        // Admin-only pages
-        if (hasRole("ADMIN")) {
-            items.push(
-                { key: "reports", label: "Reports", roles: ["ADMIN"] }
+                { key: "operations-dashboard", label: "Operations Dashboard", roles: ["STAFF"] },
+                { key: "customers", label: "Customers", roles: ["STAFF"] },
+                { key: "vehicles", label: "Vehicles", roles: ["STAFF"] },
+                { key: "bookings", label: "All Bookings", roles: ["STAFF"] },
+                { key: "service-types", label: "Service Types", roles: ["STAFF"] },
+                { key: "inventory", label: "Inventory", roles: ["STAFF"] },
+                { key: "vehicle-types", label: "Vehicle Types", roles: ["STAFF"] }
             );
         }
 

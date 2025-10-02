@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/vehicles/**").permitAll()
                         .requestMatchers("/api/vehicles/by-customer/**").permitAll()
                         .requestMatchers("/api/vehicle-types/**").permitAll()
+                        .requestMatchers("/api/locations/**").permitAll()
                         .requestMatchers("/api/reports/**").permitAll()
                         .requestMatchers("/api/billing/**").hasAnyRole("FINANCE", "STAFF", "ADMIN")
                         .requestMatchers("/api/finance/**").hasAnyRole("FINANCE", "STAFF", "ADMIN")

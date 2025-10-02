@@ -22,7 +22,8 @@ public class WebConfig {
             }
             @Override
             public void addInterceptors(@NonNull InterceptorRegistry registry) {
-                registry.addInterceptor(new CustomerAccessInterceptor());
+                // Temporarily disabled to debug customer booking issue
+                // registry.addInterceptor(new CustomerAccessInterceptor());
             }
         };
     }

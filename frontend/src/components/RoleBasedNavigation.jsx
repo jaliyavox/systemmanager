@@ -11,7 +11,7 @@ export default function RoleBasedNavigation({ onNavigate, currentPage }) {
         // Customer-specific pages
         if (hasRole("CUSTOMER")) {
             items.push(
-                { key: "my-bookings", label: "My Bookings", roles: ["CUSTOMER"] },
+                { key: "my-bookings", label: "My Dashboard", roles: ["CUSTOMER"] },
                 { key: "my-vehicles", label: "My Vehicles", roles: ["CUSTOMER"] }
             );
         }

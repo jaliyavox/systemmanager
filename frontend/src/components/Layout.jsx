@@ -14,8 +14,96 @@ import Bookings from "./Bookings";
 import Customers from "./Customers";
 import Vehicles from "./Vehicles";
 import ServiceTypes from "./ServiceTypes";
-import MyBookings from "./MyBookings";
+import CustomerDashboard from "./CustomerDashboard";
 import MyVehicles from "./MyVehicles";
+
+function Home({ onNavigate }) {
+    const { user, hasRole } = useAuth();
+
+    const getRoleBasedContent = () => {
+        if (hasRole("CUSTOMER")) {
+            return {
+                title: "Welcome to AutoFuel Lanka",
+                subtitle: "Manage your fuel station visits, service appointments, and vehicles",
+                buttons: [
+                    { key: "my-bookings", label: "My Dashboard", color: "primary" },
+                    { key: "my-vehicles", label: "My Vehicles", color: "ok" }
+                ]
+            };
+        } else if (hasRole("STAFF")) {
+            return {
+                title: "Operations Manager Dashboard",
+                subtitle: "Complete system management, inventory, and reporting",
+                buttons: [
+                    { key: "operations-dashboard", label: "Operations Dashboard", color: "primary" },
+                    { key: "customers", label: "Manage Customers", color: "ok" },
+                    { key: "bookings", label: "All Bookings", color: "primary" },
+                    { key: "vehicles", label: "Manage Vehicles", color: "ok" },
+                    { key: "service-types", label: "Service Types", color: "primary" },
+                    { key: "inventory", label: "Manage Inventory", color: "ok" },
+                    { key: "vehicle-types", label: "Vehicle Types", color: "primary" }
+                ]
+            };
+        } else if (hasRole("FINANCE")) {
+            return {
+                title: "Finance Dashboard",
+                subtitle: "Invoice management, payments, and financial reporting",
+                buttons: [
+                    { key: "invoices", label: "Manage Invoices", color: "primary" },
+                    { key: "finance-ledger", label: "Finance Ledger", color: "ok" }
+                ]
+            };
+        }
+        return {
+            title: "AutoFuel Lanka",
+            subtitle: "Fuel & Service Management System",
+            buttons: []
+        };
+    };
+
+    const content = getRoleBasedContent();
+
+    return (
+        <section className="hero">
+            <div className="container hero-inner">
+                <div>
+                    <h2>{content.title}<span style={{ color: "var(--brand)" }}>—Simplified</span></h2>
+                    <p>
+                        {content.subtitle}
+                        {user && <><br />Logged in as: <strong>{user.email}</strong> ({user.role})</>}
+                    </p>
+                    <div className="hero-cta">
+                        {content.buttons.map(button => (
+                            <button 
+                                key={button.key}
+                                className={`btn btn-${button.color}`} 
+                                onClick={() => onNavigate(button.key)}
+                            >
+                                {button.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Right-side quick info card on desktop */}
+                <div className="hero-card">
+                    <Row label="User Role" value={user?.role || "Guest"} />
+                    <Row label="Email" value={user?.email || "Not logged in"} />
+                    <Row label="Last login" value="Just now" />
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function Row({ label, value }) {
+    return (
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+            <span style={{ color: "#6b7280" }}>{label}</span>
+            <strong>{value}</strong>
+        </div>
+    );
+}
 
 export default function Layout() {
     const [page, setPage] = useState("home");
@@ -39,7 +127,7 @@ export default function Layout() {
                 {page === "my-bookings" && (
                     <section className="section">
                         <div className="container">
-                            <MyBookings />
+                            <CustomerDashboard />
                         </div>
                     </section>
                 )}
@@ -183,94 +271,6 @@ export default function Layout() {
                     <small>© {new Date().getFullYear()} AutoFuel Lanka. All rights reserved.</small>
                 </div>
             </footer>
-        </div>
-    );
-}
-
-function Home({ onNavigate }) {
-    const { user, hasRole } = useAuth();
-
-    const getRoleBasedContent = () => {
-        if (hasRole("CUSTOMER")) {
-            return {
-                title: "Welcome to AutoFuel Lanka",
-                subtitle: "Manage your bookings and vehicles",
-                buttons: [
-                    { key: "my-bookings", label: "My Bookings", color: "primary" },
-                    { key: "my-vehicles", label: "My Vehicles", color: "ok" }
-                ]
-            };
-        } else if (hasRole("STAFF")) {
-            return {
-                title: "Operations Manager Dashboard",
-                subtitle: "Complete system management, inventory, and reporting",
-                buttons: [
-                    { key: "operations-dashboard", label: "Operations Dashboard", color: "primary" },
-                    { key: "customers", label: "Manage Customers", color: "ok" },
-                    { key: "bookings", label: "All Bookings", color: "primary" },
-                    { key: "vehicles", label: "Manage Vehicles", color: "ok" },
-                    { key: "service-types", label: "Service Types", color: "primary" },
-                    { key: "inventory", label: "Manage Inventory", color: "ok" },
-                    { key: "vehicle-types", label: "Vehicle Types", color: "primary" }
-                ]
-            };
-        } else if (hasRole("FINANCE")) {
-            return {
-                title: "Finance Dashboard",
-                subtitle: "Invoice management, payments, and financial reporting",
-                buttons: [
-                    { key: "invoices", label: "Manage Invoices", color: "primary" },
-                    { key: "finance-ledger", label: "Finance Ledger", color: "ok" }
-                ]
-            };
-        }
-        return {
-            title: "AutoFuel Lanka",
-            subtitle: "Fuel & Service Management System",
-            buttons: []
-        };
-    };
-
-    const content = getRoleBasedContent();
-
-    return (
-        <section className="hero">
-            <div className="container hero-inner">
-                <div>
-                    <h2>{content.title}<span style={{ color: "var(--brand)" }}>—Simplified</span></h2>
-                    <p>
-                        {content.subtitle}
-                        {user && <><br />Logged in as: <strong>{user.email}</strong> ({user.role})</>}
-                    </p>
-                    <div className="hero-cta">
-                        {content.buttons.map(button => (
-                            <button 
-                                key={button.key}
-                                className={`btn btn-${button.color}`} 
-                                onClick={() => onNavigate(button.key)}
-                            >
-                                {button.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Right-side quick info card on desktop */}
-                <div className="hero-card">
-                    <Row label="User Role" value={user?.role || "Guest"} />
-                    <Row label="Email" value={user?.email || "Not logged in"} />
-                    <Row label="Last login" value="Just now" />
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function Row({ label, value }) {
-    return (
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-            <span style={{ color: "#6b7280" }}>{label}</span>
-            <strong>{value}</strong>
         </div>
     );
 }

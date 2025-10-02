@@ -8,9 +8,11 @@ export default function MyBookings() {
     const [bookings, setBookings] = useState([]);
     const [vehicles, setVehicles] = useState([]);
     const [serviceTypes, setServiceTypes] = useState([]);
+    const [locations, setLocations] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [err, setErr] = useState("");
+    const [error, setError] = useState("");
     const [editId, setEditId] = useState(null);
+    const [showForm, setShowForm] = useState(false);
 
     const [form, setForm] = useState({
         locationId: "",
@@ -20,236 +22,536 @@ export default function MyBookings() {
         endTime: "",
         serviceTypeId: "",
         status: "PENDING",
+        fuelType: "",
+        litersRequested: ""
     });
 
-    // Load customer's bookings, vehicles, and service types
-    const load = async () => {
+    // Load all necessary data
+    const loadData = async () => {
         setLoading(true);
-        setErr("");
+        setError("");
         try {
-            const [bookingsRes, vehiclesRes, serviceTypesRes] = await Promise.all([
+            const requests = [
                 fetch(`${API_BASE}/api/customers/${user.id}/bookings`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
                 fetch(`${API_BASE}/api/vehicles/by-customer/${user.id}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 }),
-                fetch(`${API_BASE}/api/service-types`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-            ]);
+                fetch(`${API_BASE}/api/service-types`),
+                fetch(`${API_BASE}/api/locations`)
+            ];
+
+            const [bookingsRes, vehiclesRes, serviceTypesRes, locationsRes] = await Promise.all(requests);
             
+            // Check each response
             if (!bookingsRes.ok) {
-                const errorText = await bookingsRes.text();
-                throw new Error(`Bookings HTTP ${bookingsRes.status}: ${errorText}`);
+                throw new Error(`Bookings: ${bookingsRes.status} ${bookingsRes.statusText}`);
             }
             if (!vehiclesRes.ok) {
-                const errorText = await vehiclesRes.text();
-                throw new Error(`Vehicles HTTP ${vehiclesRes.status}: ${errorText}`);
+                throw new Error(`Vehicles: ${vehiclesRes.status} ${vehiclesRes.statusText}`);
             }
             if (!serviceTypesRes.ok) {
-                const errorText = await serviceTypesRes.text();
-                throw new Error(`Service Types HTTP ${serviceTypesRes.status}: ${errorText}`);
+                throw new Error(`Service Types: ${serviceTypesRes.status} ${serviceTypesRes.statusText}`);
             }
-            
-            const [bookingsData, vehiclesData, serviceTypesData] = await Promise.all([
+            if (!locationsRes.ok) {
+                throw new Error(`Locations: ${locationsRes.status} ${locationsRes.statusText}`);
+            }
+
+            const [bookingsData, vehiclesData, serviceTypesData, locationsData] = await Promise.all([
                 bookingsRes.json(),
                 vehiclesRes.json(),
-                serviceTypesRes.json()
+                serviceTypesRes.json(),
+                locationsRes.json()
             ]);
-            
+
             setBookings(bookingsData);
             setVehicles(vehiclesData);
             setServiceTypes(serviceTypesData);
-        } catch (e) {
-            setErr(String(e.message));
+            setLocations(locationsData);
+        } catch (err) {
+            console.error("Error loading data:", err);
+            setError(`Failed to load data: ${err.message}`);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (user) {
-            load();
+        if (user && token) {
+            loadData();
         }
-    }, [user]);
+    }, [user, token]);
 
-    const onChange = (e) => {
+    const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setForm((f) => ({ ...f, [name]: value }));
+        setForm(prev => ({ ...prev, [name]: value }));
     };
 
-    // Create booking
-    const onSubmit = async (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setError("");
+
         try {
-            const url = editId ? `${API_BASE}/api/customers/${user.id}/bookings/${editId}` : `${API_BASE}/api/customers/${user.id}/bookings`;
+            const url = editId 
+                ? `${API_BASE}/api/customers/${user.id}/bookings/${editId}`
+                : `${API_BASE}/api/customers/${user.id}/bookings`;
+            
             const method = editId ? "PUT" : "POST";
 
-            const body = {
+            const requestBody = {
                 locationId: Number(form.locationId),
                 vehicleId: Number(form.vehicleId),
                 type: form.type,
                 startTime: form.startTime,
                 endTime: form.endTime,
                 status: form.status,
-                ...(form.serviceTypeId && { serviceTypeId: Number(form.serviceTypeId) })
+                ...(form.serviceTypeId && { serviceTypeId: Number(form.serviceTypeId) }),
+                ...(form.fuelType && { fuelType: form.fuelType }),
+                ...(form.litersRequested && { litersRequested: Number(form.litersRequested) })
             };
 
-            const res = await fetch(url, {
+            const response = await fetch(url, {
                 method,
-                headers: { 
+                headers: {
                     "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}`
+                    "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify(body),
+                body: JSON.stringify(requestBody)
             });
-            if (!res.ok) {
-                const errorText = await res.text();
-                throw new Error(`HTTP ${res.status}: ${errorText}`);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
 
-            setForm({ locationId: "", vehicleId: "", type: "SERVICE", startTime: "", endTime: "", serviceTypeId: "", status: "PENDING" });
+            // Reset form and reload data
+            setForm({
+                locationId: "",
+                vehicleId: "",
+                type: "SERVICE",
+                startTime: "",
+                endTime: "",
+                serviceTypeId: "",
+                status: "PENDING",
+                fuelType: "",
+                litersRequested: ""
+            });
             setEditId(null);
-            await load();
-        } catch (e) {
-            setErr(String(e.message));
+            setShowForm(false);
+            await loadData();
+        } catch (err) {
+            console.error("Error submitting booking:", err);
+            setError(`Failed to ${editId ? 'update' : 'create'} booking: ${err.message}`);
         }
     };
 
-    // Delete booking
-    const onDelete = async (id) => {
-        if (!confirm(`Delete booking #${id}?`)) return;
+    const handleEdit = (booking) => {
+        setEditId(booking.id);
+        setForm({
+            locationId: booking.locationId || "",
+            vehicleId: booking.vehicleId || "",
+            type: booking.type || "SERVICE",
+            startTime: booking.startTime || "",
+            endTime: booking.endTime || "",
+            serviceTypeId: booking.serviceTypeId || "",
+            status: booking.status || "PENDING",
+            fuelType: booking.fuelType || "",
+            litersRequested: booking.litersRequested || ""
+        });
+        setShowForm(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (!confirm(`Are you sure you want to delete booking #${id}?`)) return;
+        
         try {
-            const res = await fetch(`${API_BASE}/api/customers/${user.id}/bookings/${id}`, { 
+            const response = await fetch(`${API_BASE}/api/customers/${user.id}/bookings/${id}`, {
                 method: "DELETE",
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    "Authorization": `Bearer ${token}`
                 }
             });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            await load();
-        } catch (e) {
-            setErr(String(e.message));
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            await loadData();
+        } catch (err) {
+            console.error("Error deleting booking:", err);
+            setError(`Failed to delete booking: ${err.message}`);
         }
     };
 
-    if (loading) return <p style={{ padding: 16 }}>Loading your bookings…</p>;
-    if (err) return <p style={{ color: "red", padding: 16 }}>Error: {err}</p>;
+    const handleCancel = () => {
+        setEditId(null);
+        setShowForm(false);
+        setForm({
+            locationId: "",
+            vehicleId: "",
+            type: "SERVICE",
+            startTime: "",
+            endTime: "",
+            serviceTypeId: "",
+            status: "PENDING",
+            fuelType: "",
+            litersRequested: ""
+        });
+    };
+
+    const formatDateTime = (dateTimeString) => {
+        if (!dateTimeString) return "-";
+        try {
+            return new Date(dateTimeString).toLocaleString();
+        } catch {
+            return dateTimeString;
+        }
+    };
+
+    const getLocationName = (locationId) => {
+        const location = locations.find(l => l.id === locationId);
+        return location ? location.name : `Location ${locationId}`;
+    };
+
+    const getVehicleName = (vehicleId) => {
+        const vehicle = vehicles.find(v => v.id === vehicleId);
+        return vehicle ? `${vehicle.plateNumber} - ${vehicle.make} ${vehicle.model}` : `Vehicle ${vehicleId}`;
+    };
+
+    const getServiceName = (serviceTypeId) => {
+        const service = serviceTypes.find(s => s.id === serviceTypeId);
+        return service ? service.name : `Service ${serviceTypeId}`;
+    };
+
+    if (loading) {
+        return (
+            <div style={{ padding: "20px", textAlign: "center" }}>
+                <h2>Loading your bookings...</h2>
+            </div>
+        );
+    }
 
     return (
-        <div style={{ padding: 16 }}>
-            <h1>My Bookings</h1>
+        <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h1>My Bookings</h1>
+                <button
+                    onClick={() => setShowForm(true)}
+                    style={{
+                        backgroundColor: "#007bff",
+                        color: "white",
+                        border: "none",
+                        padding: "10px 20px",
+                        borderRadius: "5px",
+                        cursor: "pointer",
+                        fontSize: "16px"
+                    }}
+                >
+                    + New Booking
+                </button>
+            </div>
 
-            {/* Create Booking Form */}
-            <form onSubmit={onSubmit} style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(6, 1fr)", marginBottom: 16 }}>
-                <input
-                    name="locationId"
-                    type="number"
-                    min="1"
-                    placeholder="Location ID"
-                    value={form.locationId}
-                    onChange={onChange}
-                    required
-                />
-                <select name="vehicleId" value={form.vehicleId} onChange={onChange} required>
-                    <option value="">Select Vehicle</option>
-                    {vehicles.map(v => (
-                        <option key={v.id} value={v.id}>
-                            {v.plateNumber} - {v.make} {v.model}
-                        </option>
-                    ))}
-                </select>
-                <select name="type" value={form.type} onChange={onChange}>
-                    <option value="SERVICE">SERVICE</option>
-                    <option value="FUEL">FUEL</option>
-                </select>
-                <input
-                    name="startTime"
-                    type="datetime-local"
-                    value={form.startTime}
-                    onChange={onChange}
-                    required
-                />
-                <input
-                    name="endTime"
-                    type="datetime-local"
-                    value={form.endTime}
-                    onChange={onChange}
-                    required
-                />
-                <select name="serviceTypeId" value={form.serviceTypeId} onChange={onChange}>
-                    <option value="">Select Service (Optional)</option>
-                    {serviceTypes.map(st => (
-                        <option key={st.id} value={st.id}>
-                            {st.name} - ${st.price}
-                        </option>
-                    ))}
-                </select>
-                <select name="status" value={form.status} onChange={onChange}>
-                    <option value="PENDING">PENDING</option>
-                    <option value="CONFIRMED">CONFIRMED</option>
-                    <option value="IN_PROGRESS">IN_PROGRESS</option>
-                    <option value="COMPLETED">COMPLETED</option>
-                    <option value="CANCELLED">CANCELLED</option>
-                </select>
-                <button type="submit">{editId ? "Save Update" : "Add Booking"}</button>
-                {editId && (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setEditId(null);
-                            setForm({ locationId: "", vehicleId: "", type: "SERVICE", startTime: "", endTime: "", serviceTypeId: "", status: "PENDING" });
-                        }}
-                    >
-                        Cancel
-                    </button>
-                )}
-            </form>
+            {error && (
+                <div style={{
+                    backgroundColor: "#f8d7da",
+                    color: "#721c24",
+                    padding: "10px",
+                    borderRadius: "5px",
+                    marginBottom: "20px",
+                    border: "1px solid #f5c6cb"
+                }}>
+                    {error}
+                </div>
+            )}
 
-            {bookings.length === 0 ? (
-                <p>No bookings yet.</p>
-            ) : (
-                <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", width: "100%" }}>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Location</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Start Time</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {bookings.map((b) => (
-                            <tr key={b.id}>
-                                <td>{b.id}</td>
-                                <td>{b.locationId ?? "-"}</td>
-                                <td>{b.type ?? "-"}</td>
-                                <td>{b.status ?? "-"}</td>
-                                <td>{b.startTime ?? "-"}</td>
-                                <td>
-                                    <button
-                                        onClick={() => {
-                                            setEditId(b.id);
-                                            setForm({
-                                                locationId: b.locationId ?? "",
-                                                type: b.type ?? "SERVICE",
-                                                startTime: b.startTime ?? "",
-                                                status: b.status ?? "PENDING",
-                                            });
-                                        }}
-                                        style={{ marginRight: 8 }}
+            {/* Booking Form */}
+            {showForm && (
+                <div style={{
+                    backgroundColor: "#f8f9fa",
+                    padding: "20px",
+                    borderRadius: "5px",
+                    marginBottom: "20px",
+                    border: "1px solid #dee2e6"
+                }}>
+                    <h3>{editId ? "Edit Booking" : "Create New Booking"}</h3>
+                    <form onSubmit={handleSubmit} style={{ display: "grid", gap: "15px", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
+                        <div>
+                            <label>Location *</label>
+                            <select
+                                name="locationId"
+                                value={form.locationId}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+                            >
+                                <option value="">Select Location</option>
+                                {locations.map(location => (
+                                    <option key={location.id} value={location.id}>
+                                        {location.name} - {location.address}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label>Vehicle *</label>
+                            <select
+                                name="vehicleId"
+                                value={form.vehicleId}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+                            >
+                                <option value="">Select Vehicle</option>
+                                {vehicles.map(vehicle => (
+                                    <option key={vehicle.id} value={vehicle.id}>
+                                        {vehicle.plateNumber} - {vehicle.make} {vehicle.model}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label>Booking Type *</label>
+                            <select
+                                name="type"
+                                value={form.type}
+                                onChange={handleInputChange}
+                                style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+                            >
+                                <option value="SERVICE">Service</option>
+                                <option value="FUEL">Fuel</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label>Start Time *</label>
+                            <input
+                                type="datetime-local"
+                                name="startTime"
+                                value={form.startTime}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+                            />
+                        </div>
+
+                        <div>
+                            <label>End Time *</label>
+                            <input
+                                type="datetime-local"
+                                name="endTime"
+                                value={form.endTime}
+                                onChange={handleInputChange}
+                                required
+                                style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+                            />
+                        </div>
+
+                        {form.type === "SERVICE" && (
+                            <div>
+                                <label>Service Type</label>
+                                <select
+                                    name="serviceTypeId"
+                                    value={form.serviceTypeId}
+                                    onChange={handleInputChange}
+                                    style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+                                >
+                                    <option value="">Select Service (Optional)</option>
+                                    {serviceTypes.map(service => (
+                                        <option key={service.id} value={service.id}>
+                                            {service.name} - ${service.price}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {form.type === "FUEL" && (
+                            <>
+                                <div>
+                                    <label>Fuel Type</label>
+                                    <select
+                                        name="fuelType"
+                                        value={form.fuelType}
+                                        onChange={handleInputChange}
+                                        style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
                                     >
-                                        Edit
-                                    </button>
-                                    <button onClick={() => onDelete(b.id)}>Delete</button>
-                                </td>
+                                        <option value="">Select Fuel Type</option>
+                                        <option value="PETROL">Petrol</option>
+                                        <option value="DIESEL">Diesel</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Liters Requested</label>
+                                    <input
+                                        type="number"
+                                        name="litersRequested"
+                                        value={form.litersRequested}
+                                        onChange={handleInputChange}
+                                        min="0"
+                                        step="0.1"
+                                        style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+                                    />
+                                </div>
+                            </>
+                        )}
+
+                        <div>
+                            <label>Status</label>
+                            <select
+                                name="status"
+                                value={form.status}
+                                onChange={handleInputChange}
+                                style={{ width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc" }}
+                            >
+                                <option value="PENDING">Pending</option>
+                                <option value="CONFIRMED">Confirmed</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+
+                        <div style={{ gridColumn: "1 / -1", display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                            <button
+                                type="button"
+                                onClick={handleCancel}
+                                style={{
+                                    backgroundColor: "#6c757d",
+                                    color: "white",
+                                    border: "none",
+                                    padding: "10px 20px",
+                                    borderRadius: "5px",
+                                    cursor: "pointer"
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                style={{
+                                    backgroundColor: "#28a745",
+                                    color: "white",
+                                    border: "none",
+                                    padding: "10px 20px",
+                                    borderRadius: "5px",
+                                    cursor: "pointer"
+                                }}
+                            >
+                                {editId ? "Update Booking" : "Create Booking"}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* Bookings List */}
+            {bookings.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px", color: "#6c757d" }}>
+                    <h3>No bookings found</h3>
+                    <p>Click "New Booking" to create your first booking.</p>
+                </div>
+            ) : (
+                <div style={{ overflowX: "auto" }}>
+                    <table style={{
+                        width: "100%",
+                        borderCollapse: "collapse",
+                        backgroundColor: "white",
+                        borderRadius: "5px",
+                        overflow: "hidden",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                    }}>
+                        <thead>
+                            <tr style={{ backgroundColor: "#f8f9fa" }}>
+                                <th style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #dee2e6" }}>ID</th>
+                                <th style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #dee2e6" }}>Location</th>
+                                <th style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #dee2e6" }}>Vehicle</th>
+                                <th style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #dee2e6" }}>Type</th>
+                                <th style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #dee2e6" }}>Service</th>
+                                <th style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #dee2e6" }}>Status</th>
+                                <th style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #dee2e6" }}>Start Time</th>
+                                <th style={{ padding: "12px", textAlign: "left", borderBottom: "1px solid #dee2e6" }}>Actions</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {bookings.map((booking) => (
+                                <tr key={booking.id} style={{ borderBottom: "1px solid #dee2e6" }}>
+                                    <td style={{ padding: "12px" }}>{booking.id}</td>
+                                    <td style={{ padding: "12px" }}>{getLocationName(booking.locationId)}</td>
+                                    <td style={{ padding: "12px" }}>{getVehicleName(booking.vehicleId)}</td>
+                                    <td style={{ padding: "12px" }}>
+                                        <span style={{
+                                            padding: "4px 8px",
+                                            borderRadius: "4px",
+                                            fontSize: "12px",
+                                            backgroundColor: booking.type === "SERVICE" ? "#e3f2fd" : "#fff3e0",
+                                            color: booking.type === "SERVICE" ? "#1976d2" : "#f57c00"
+                                        }}>
+                                            {booking.type}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: "12px" }}>
+                                        {booking.serviceTypeId ? getServiceName(booking.serviceTypeId) : 
+                                         booking.fuelType ? `${booking.fuelType}${booking.litersRequested ? ` (${booking.litersRequested}L)` : ''}` : '-'}
+                                    </td>
+                                    <td style={{ padding: "12px" }}>
+                                        <span style={{
+                                            padding: "4px 8px",
+                                            borderRadius: "4px",
+                                            fontSize: "12px",
+                                            backgroundColor: 
+                                                booking.status === "COMPLETED" ? "#e8f5e8" :
+                                                booking.status === "CANCELLED" ? "#ffeaea" :
+                                                booking.status === "IN_PROGRESS" ? "#fff3cd" :
+                                                "#e3f2fd",
+                                            color: 
+                                                booking.status === "COMPLETED" ? "#2e7d32" :
+                                                booking.status === "CANCELLED" ? "#d32f2f" :
+                                                booking.status === "IN_PROGRESS" ? "#f57c00" :
+                                                "#1976d2"
+                                        }}>
+                                            {booking.status}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: "12px" }}>{formatDateTime(booking.startTime)}</td>
+                                    <td style={{ padding: "12px" }}>
+                                        <button
+                                            onClick={() => handleEdit(booking)}
+                                            style={{
+                                                backgroundColor: "#007bff",
+                                                color: "white",
+                                                border: "none",
+                                                padding: "6px 12px",
+                                                borderRadius: "4px",
+                                                cursor: "pointer",
+                                                marginRight: "8px",
+                                                fontSize: "12px"
+                                            }}
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(booking.id)}
+                                            style={{
+                                                backgroundColor: "#dc3545",
+                                                color: "white",
+                                                border: "none",
+                                                padding: "6px 12px",
+                                                borderRadius: "4px",
+                                                cursor: "pointer",
+                                                fontSize: "12px"
+                                            }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );

@@ -17,8 +17,8 @@ public class CustomerAccessInterceptor implements HandlerInterceptor {
                 String customerIdStr = parts[3];
                 Authentication auth = SecurityContextHolder.getContext().getAuthentication();
                 
-                // If no authentication, this endpoint is permitted - allow access
-                if (auth == null || !auth.isAuthenticated()) {
+                // If no authentication or anonymous user, this endpoint is permitted - allow access
+                if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
                     return true;
                 }
                 

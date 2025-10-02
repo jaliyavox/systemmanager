@@ -15,7 +15,6 @@ import Bookings from "./Bookings";
 import Customers from "./Customers";
 import Vehicles from "./Vehicles";
 import ServiceTypes from "./ServiceTypes";
-import CustomerDashboard from "./CustomerDashboard";
 import MyVehicles from "./MyVehicles";
 
 function Home({ onNavigate }) {
@@ -26,7 +25,6 @@ function Home({ onNavigate }) {
                 title: "Welcome to AutoFuel Lanka",
                 subtitle: "Manage your fuel station visits, service appointments, and vehicles",
                 buttons: [
-                    { key: "my-bookings", label: "My Dashboard", color: "primary" },
                     { key: "my-vehicles", label: "My Vehicles", color: "ok" }
                 ]
             };
@@ -135,7 +133,6 @@ export default function Layout() {
                 {page === "home" && <Home onNavigate={navigateTo} />}
 
                 {/* Customer */}
-                {page === "my-bookings" && <section className="section"><div className="container"><CustomerDashboard /></div></section>}
                 {page === "my-vehicles" && <section className="section"><div className="container"><MyVehicles /></div></section>}
 
                 {/* Staff/Admin */}

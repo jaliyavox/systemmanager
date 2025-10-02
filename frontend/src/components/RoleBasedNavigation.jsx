@@ -10,7 +10,6 @@ export default function RoleBasedNavigation({ onNavigate, currentPage }) {
 
         if (hasRole("CUSTOMER")) {
             items.push(
-                { key: "my-bookings", label: "My Dashboard", roles: ["CUSTOMER"] },
                 { key: "my-vehicles", label: "My Vehicles", roles: ["CUSTOMER"] }
             );
         }

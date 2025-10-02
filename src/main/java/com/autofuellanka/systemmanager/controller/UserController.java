@@ -23,10 +23,9 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User payload) {
         if (payload.getEmail() == null || payload.getEmail().isBlank()
-                || payload.getFullName() == null || payload.getFullName().isBlank()
                 || payload.getPassword() == null || payload.getPassword().isBlank()
                 || payload.getPhone() == null || payload.getPhone().isBlank()) {
-            return ResponseEntity.badRequest().body("fullName, email, password, phone are required");
+            return ResponseEntity.badRequest().body("email, password, phone are required");
         }
         if (userRepository.findByEmail(payload.getEmail()).isPresent()) {
             return ResponseEntity.badRequest().body("Email already exists");
@@ -71,23 +70,64 @@ public class UserController {
         all.forEach(u -> u.setPassword(null));
         return all;
     }
+
+    // --- CREATE USER ---
+    @PostMapping
+    public ResponseEntity<?> createUser(@RequestBody User user) {
+        if (user.getEmail() == null || user.getEmail().isBlank()
+                || user.getPassword() == null || user.getPassword().isBlank()) {
+            return ResponseEntity.badRequest().body("Email and password are required");
+        }
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            return ResponseEntity.badRequest().body("Email already exists");
+        }
+        if (user.getRole() == null || user.getRole().isBlank()) {
+            user.setRole("CUSTOMER");
+        }
+        user.setEnabled(true);
+
+        User saved = userRepository.save(user);
+        saved.setPassword(null);
+        return ResponseEntity.ok(saved);
+    }
     @PutMapping(path = "/{id}", consumes = "application/json", produces = "application/json")
     public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestBody User updates) {
         return userRepository.findById(id)
                 .map(user -> {
-                    if (updates.getFullName() != null && !updates.getFullName().isBlank())
-                        user.setFullName(updates.getFullName());
+                    if (updates.getFirstName() != null && !updates.getFirstName().isBlank())
+                        user.setFirstName(updates.getFirstName());
+                    if (updates.getLastName() != null && !updates.getLastName().isBlank())
+                        user.setLastName(updates.getLastName());
+                    if (updates.getEmail() != null && !updates.getEmail().isBlank())
+                        user.setEmail(updates.getEmail());
                     if (updates.getPhone() != null && !updates.getPhone().isBlank())
                         user.setPhone(updates.getPhone());
                     if (updates.getAddress() != null && !updates.getAddress().isBlank())
                         user.setAddress(updates.getAddress());
+                    if (updates.getCity() != null && !updates.getCity().isBlank())
+                        user.setCity(updates.getCity());
+                    if (updates.getPostalCode() != null && !updates.getPostalCode().isBlank())
+                        user.setPostalCode(updates.getPostalCode());
                     if (updates.getRole() != null && !updates.getRole().isBlank())
                         user.setRole(updates.getRole());
+                    // Only update password if provided
+                    if (updates.getPassword() != null && !updates.getPassword().isBlank())
+                        user.setPassword(updates.getPassword());
 
                     User saved = userRepository.save(user);
                     saved.setPassword(null);
                     return ResponseEntity.ok(saved);
                 })
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // --- DELETE USER ---
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        if (!userRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        userRepository.deleteById(id);
+        return ResponseEntity.ok().body("User deleted successfully");
     }
 }

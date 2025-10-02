@@ -15,6 +15,7 @@ import Bookings from "./Bookings";
 import Customers from "./Customers";
 import Vehicles from "./Vehicles";
 import ServiceTypes from "./ServiceTypes";
+import UserManagement from "./UserManagement";
 import MyVehicles from "./MyVehicles";
 
 function Home({ onNavigate }) {
@@ -136,6 +137,7 @@ export default function Layout() {
                 {page === "my-vehicles" && <section className="section"><div className="container"><MyVehicles /></div></section>}
 
                 {/* Staff/Admin */}
+                {page === "user-management" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><UserManagement /></ProtectedRoute></div></section>}
                 {page === "customers" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><Customers /></ProtectedRoute></div></section>}
                 {page === "vehicles" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><Vehicles /></ProtectedRoute></div></section>}
                 {page === "bookings" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><Bookings /></ProtectedRoute></div></section>}

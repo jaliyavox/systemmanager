@@ -61,7 +61,8 @@ public class AdminUserController {
                                     @RequestBody User patch) {
         if (denyIfNotAdmin(roleHeader)) return ResponseEntity.status(403).body("Admin only");
         return users.findById(id).map(u -> {
-            if (patch.getFullName() != null && !patch.getFullName().isBlank()) u.setFullName(patch.getFullName());
+            if (patch.getFirstName() != null && !patch.getFirstName().isBlank()) u.setFirstName(patch.getFirstName());
+            if (patch.getLastName() != null && !patch.getLastName().isBlank()) u.setLastName(patch.getLastName());
             if (patch.getPhone() != null && !patch.getPhone().isBlank()) u.setPhone(patch.getPhone());
             if (patch.getAddress() != null && !patch.getAddress().isBlank()) u.setAddress(patch.getAddress());
             if (patch.getRole() != null && !patch.getRole().isBlank()) u.setRole(patch.getRole());

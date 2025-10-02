@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/components/Layout.jsx
+import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ProtectedRoute from "./ProtectedRoute";
 import RoleBasedNavigation from "./RoleBasedNavigation";
@@ -19,7 +20,6 @@ import MyVehicles from "./MyVehicles";
 
 function Home({ onNavigate }) {
     const { user, hasRole } = useAuth();
-
     const getRoleBasedContent = () => {
         if (hasRole("CUSTOMER")) {
             return {
@@ -54,13 +54,8 @@ function Home({ onNavigate }) {
                 ]
             };
         }
-        return {
-            title: "AutoFuel Lanka",
-            subtitle: "Fuel & Service Management System",
-            buttons: []
-        };
+        return { title: "AutoFuel Lanka", subtitle: "Fuel & Service Management System", buttons: [] };
     };
-
     const content = getRoleBasedContent();
 
     return (
@@ -74,9 +69,9 @@ function Home({ onNavigate }) {
                     </p>
                     <div className="hero-cta">
                         {content.buttons.map(button => (
-                            <button 
+                            <button
                                 key={button.key}
-                                className={`btn btn-${button.color}`} 
+                                className={`btn btn-${button.color}`}
                                 onClick={() => onNavigate(button.key)}
                             >
                                 {button.label}
@@ -84,8 +79,6 @@ function Home({ onNavigate }) {
                         ))}
                     </div>
                 </div>
-
-                {/* Right-side quick info card on desktop */}
                 <div className="hero-card">
                     <Row label="User Role" value={user?.role || "Guest"} />
                     <Row label="Email" value={user?.email || "Not logged in"} />
@@ -109,163 +102,65 @@ export default function Layout() {
     const [page, setPage] = useState("home");
     const { user } = useAuth();
 
+    // --- hash URL sync (minimal) ---
+    const DEFAULT_PAGE = "home";
+    const readHash = () => (window.location.hash || "").replace(/^#\/?/, "") || DEFAULT_PAGE;
+    const writeHash = (key) => {
+        const h = `#/${key}`;
+        if (window.location.hash !== h) window.history.pushState({}, "", h);
+    };
+    const navigateTo = (key) => { if (key) { setPage(key); writeHash(key); } };
+    useEffect(() => {
+        setPage(readHash());
+        const onChange = () => setPage(readHash());
+        window.addEventListener("popstate", onChange);
+        window.addEventListener("hashchange", onChange);
+        return () => {
+            window.removeEventListener("popstate", onChange);
+            window.removeEventListener("hashchange", onChange);
+        };
+    }, []);
+    // --- end hash sync ---
+
     return (
         <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-            {/* Header */}
             <header className="app-header">
                 <div className="container header-inner">
                     <h1 className="brand">AutoFuel Lanka</h1>
-                    <RoleBasedNavigation onNavigate={setPage} currentPage={page} />
+                    <RoleBasedNavigation onNavigate={navigateTo} currentPage={page} />
                 </div>
             </header>
 
-            {/* Main */}
             <main style={{ flex: 1 }}>
-                {page === "home" && <Home onNavigate={setPage} />}
+                {page === "home" && <Home onNavigate={navigateTo} />}
 
-                {/* Customer-specific pages */}
-                {page === "my-bookings" && (
-                    <section className="section">
-                        <div className="container">
-                            <CustomerDashboard />
-                        </div>
-                    </section>
-                )}
+                {/* Customer */}
+                {page === "my-bookings" && <section className="section"><div className="container"><CustomerDashboard /></div></section>}
+                {page === "my-vehicles" && <section className="section"><div className="container"><MyVehicles /></div></section>}
 
-                {page === "my-vehicles" && (
-                    <section className="section">
-                        <div className="container">
-                            <MyVehicles />
-                        </div>
-                    </section>
-                )}
+                {/* Staff/Admin */}
+                {page === "customers" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><Customers /></ProtectedRoute></div></section>}
+                {page === "vehicles" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><Vehicles /></ProtectedRoute></div></section>}
+                {page === "bookings" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><Bookings /></ProtectedRoute></div></section>}
+                {page === "service-types" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><ServiceTypes /></ProtectedRoute></div></section>}
+                {page === "inventory" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><InventoryItems onNavigate={navigateTo} /></ProtectedRoute></div></section>}
+                {page === "inventory-new" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><NewInventoryItem onNavigate={navigateTo} /></ProtectedRoute></div></section>}
+                {page === "inventory-moves" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><StockMoves onNavigate={navigateTo} /></ProtectedRoute></div></section>}
+                {page === "vehicle-types" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><VehicleTypes /></ProtectedRoute></div></section>}
+                {page === "operations-dashboard" && <section className="section"><div className="container"><ProtectedRoute requiredRole="STAFF"><OperationsDashboard onNavigate={navigateTo} /></ProtectedRoute></div></section>}
 
-                {/* Staff/Admin pages */}
-                {page === "customers" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <Customers />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "vehicles" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <Vehicles />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "bookings" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <Bookings />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "service-types" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <ServiceTypes />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "inventory" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <InventoryItems onNavigate={setPage} />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "inventory-new" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <NewInventoryItem onNavigate={setPage} />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "inventory-moves" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <StockMoves onNavigate={setPage} />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "vehicle-types" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <VehicleTypes />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "operations-dashboard" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="STAFF">
-                                <OperationsDashboard onNavigate={setPage} />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
-                {page === "invoices" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="FINANCE">
-                                <InvoiceList onNavigate={setPage} />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
-
+                {/* Finance */}
+                {page === "invoices" && <section className="section"><div className="container"><ProtectedRoute requiredRole="FINANCE"><InvoiceList onNavigate={navigateTo} /></ProtectedRoute></div></section>}
                 {page.startsWith("invoice-detail-") && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="FINANCE">
-                                <InvoiceDetail 
-                                    invoiceId={parseInt(page.replace("invoice-detail-", ""))} 
-                                    onNavigate={setPage} 
-                                />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
+                    <section className="section"><div className="container">
+                        <ProtectedRoute requiredRole="FINANCE">
+                            <InvoiceDetail invoiceId={parseInt(page.replace("invoice-detail-", ""))} onNavigate={navigateTo} />
+                        </ProtectedRoute>
+                    </div></section>
                 )}
-
-                {page === "finance-ledger" && (
-                    <section className="section">
-                        <div className="container">
-                            <ProtectedRoute requiredRole="FINANCE">
-                                <FinanceLedger onNavigate={setPage} />
-                            </ProtectedRoute>
-                        </div>
-                    </section>
-                )}
+                {page === "finance-ledger" && <section className="section"><div className="container"><ProtectedRoute requiredRole="FINANCE"><FinanceLedger onNavigate={navigateTo} /></ProtectedRoute></div></section>}
             </main>
 
-            {/* Footer */}
             <footer className="app-footer">
                 <div className="container footer-inner">
                     <small>© {new Date().getFullYear()} AutoFuel Lanka. All rights reserved.</small>
